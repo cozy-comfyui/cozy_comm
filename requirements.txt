@@ -1,1 +1,5 @@
 requests
+loguru
+numpy
+torch
+opencv-contrib-python
