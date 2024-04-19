@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Nodes to facilitate communication using modern web infastructre.
+Nodes to facilitate communication using modern web infrastructure.
 
 * REST - POST, GET
 * SOCKET
@@ -9,14 +9,16 @@ Nodes to facilitate communication using modern web infastructre.
 * DISCORD - POST image
 """
 
-from typing import Any
+
 import cv2
 import torch
-import numpy as np
-
-import json
-import base64
 import requests
+import numpy as np
+from discord_webhook import DiscordWebhook
+
+import base64
+from uuid import uuid1
+from typing import Any
 
 from loguru import logger
 
@@ -47,62 +49,65 @@ def request(url:str, data:dict=None, header:dict=None, files:dict=None, post:boo
             return response
     except Exception as e:
         logger.error(e)
-
-    # 503 means we are maybe in spin up mode...
-    if response.status_code == 503:
-        data = json.loads(response.content)
-        if (t := data.get('estimated_time', None)):
-            logger.warning(f"[SERVICE] 503 -- estimated start time: {t}")
-        logger.warning(data)
-    elif response.status_code > 299:
+        logger.error(data.keys())
         logger.exception(f"{response.status_code}, {response.text}")
-        logger.error(data)
     return None
 
 # =============================================================================
 # === NODE ===
 # =============================================================================
 
-class ExtNodePostDiscord:
+class CozyDiscordPost:
     CATEGORY = "comfy-ext"
     RETURN_TYPES = ()
     FUNCTION = "run"
     OUTPUT_NODE = True
-
     """
     root: https://discord.com/api/webhooks/
-    test route: 1231006315514433650/8-WfatatkgqWIYeniZeuPmYs9TDZ9ucLRyWLWryolMlACcDCe_F3Ho_2ltG4m0HCgIb9
     """
 
     @classmethod
     def INPUT_TYPES(cls) -> dict[str, dict[str, Any]]:
         return {
+            "required": {},
             "optional": {
                 "URL": ("STRING", {"default": "", "dynamicPrompts":False}),
-                "TITLE": ("STRING", {"default": "title", "dynamicPrompts":False}),
-                "DESC": ("STRING", {"default": "description", "dynamicPrompts":False}),
-                "COLOR": ("STRING", {"default": "#66FF22", "dynamicPrompts":False}),
                 "IMAGE": ("IMAGE",),
             }
         }
 
     def run(self, **kw) -> None:
         url = kw.get('URL', "")
-        url = f"https://discord.com/api/webhooks/{url}"
         image = kw.get('IMAGE', None)
         if image is not None:
             image = tensor2cv(image)
-            data = {"image": base64.b64encode(cv2.imencode('.png', image)[1]).decode()}
-            request(url, data)
+            c = image.shape[:2] if len(image.shape) > 2 else 1
+            if c == 1:
+                image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+            elif c == 3:
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            else:
+                image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
+
+            webhook = DiscordWebhook(url=url)
+            fname = f"{uuid1()}.png"
+
+            image = cv2.imencode('.png', image)[1]
+            webhook.add_file(file=image, filename=fname)
+            response = webhook.execute()
+            # data = {"file": base64.b64encode(cv2.imencode('.png', image)[1]).decode()}
+            # dont care about a response?
+            # request(url, data)
+        return ()
 
 # =============================================================================
 # === MAPPING ===
 # =============================================================================
 
 NODE_CLASS_MAPPINGS = {
-    "ExtNodePostDiscord": ExtNodePostDiscord,
+    "CozyDiscordPost": CozyDiscordPost,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "ExtNodePostDiscord": "Post Image on Discord"
+    "CozyDiscordPost": "Post Image on Discord"
 }
 WEB_DIRECTORY = "./web"

@@ -3,3 +3,4 @@ loguru
 numpy
 torch
 opencv-contrib-python
+discord-webhook
