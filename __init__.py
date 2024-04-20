@@ -9,16 +9,15 @@ Nodes to facilitate communication using modern web infrastructure.
 * DISCORD - POST image
 """
 
-
 import cv2
 import torch
 import requests
 import numpy as np
 from discord_webhook import DiscordWebhook
 
-import base64
 from uuid import uuid1
 from typing import Any
+from pathlib import Path
 
 from loguru import logger
 
@@ -71,33 +70,50 @@ class CozyDiscordPost:
         return {
             "required": {},
             "optional": {
-                "URL": ("STRING", {"default": "", "dynamicPrompts":False}),
+                "VHS": ("VHS_FILENAMES", {"default": "", "dynamicPrompts":False}),
                 "IMAGE": ("IMAGE",),
+                "FILE": ("STRING", {"default": "", "dynamicPrompts":False}),
+                "URL": ("STRING", {"default": "", "dynamicPrompts":False}),
             }
         }
 
     def run(self, **kw) -> None:
         url = kw.get('URL', "")
+        fpath = None
+        output, files = kw.get('VHS', (False, []))
+        if output:
+            fpath = files[1]
         image = kw.get('IMAGE', None)
-        if image is not None:
-            image = tensor2cv(image)
-            c = image.shape[:2] if len(image.shape) > 2 else 1
+        if image is None and fpath is None:
+            fpath = kw.get('FILE', "")
+        webhook = DiscordWebhook(url=url)
+        if fpath is not None and (fpath := Path(fpath)).is_file():
+            # upload this file instead of the thing plugged into image.
+            with open(fpath, "rb") as f:
+                webhook.add_file(file=f.read(), filename=fpath.name)
+            webhook.execute()
+            return ()
+
+        if len(image.shape) > 3:
+            image = [i for i in image]
+        else:
+            image = [image]
+        for img in image:
+            if img is None:
+                continue
+            img = tensor2cv(img)
+            c = img.shape[:2] if len(img.shape) > 2 else 1
             if c == 1:
-                image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+                img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
             elif c == 3:
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             else:
-                image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
-
-            webhook = DiscordWebhook(url=url)
+                img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGBA)
+            #
             fname = f"{uuid1()}.png"
-
-            image = cv2.imencode('.png', image)[1]
-            webhook.add_file(file=image, filename=fname)
+            img = cv2.imencode('.png', img)[1]
+            webhook.add_file(file=img, filename=fname)
             response = webhook.execute()
-            # data = {"file": base64.b64encode(cv2.imencode('.png', image)[1]).decode()}
-            # dont care about a response?
-            # request(url, data)
         return ()
 
 # =============================================================================
@@ -108,6 +124,6 @@ NODE_CLASS_MAPPINGS = {
     "CozyDiscordPost": CozyDiscordPost,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "CozyDiscordPost": "Post Image on Discord"
+    "CozyDiscordPost": "Post to Discord"
 }
 WEB_DIRECTORY = "./web"
