@@ -1,9 +1,9 @@
 [project]
 name = "cozy_comm"
 description = "Post images and video to Discord. Nodes to facilitate communication using REST."
-version = "1.0.0"
-license = { file = "LICENSE" }
-dependencies = []
+version = "1.0.1"
+license = "LICENSE"
+dependencies = ["requests", "loguru", "opencv-contrib-python", "discord-webhook"]
 
 [project.urls]
 Repository = "https://github.com/cozy-comfyui/cozy_comm"

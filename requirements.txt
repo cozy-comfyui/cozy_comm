@@ -1,6 +1,4 @@
-requests
-loguru
-numpy
-torch
-opencv-contrib-python
-discord-webhook
+requests>=2.32.3
+loguru>=0.7.2
+opencv-contrib-python>=4.10.0.82
+discord-webhook>=1.3.1
