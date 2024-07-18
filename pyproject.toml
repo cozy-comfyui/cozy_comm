@@ -1,0 +1,15 @@
+[project]
+name = "cozy_comm"
+description = "Post images and video to Discord. Nodes to facilitate communication using REST."
+version = "1.0.0"
+license = {file = "LICENSE"}
+dependencies = ["requests", "loguru", "numpy", "torch", "opencv-contrib-python", "discord-webhook"]
+
+[project.urls]
+Repository = "https://github.com/cozy-comfyui/cozy_comm"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "cozy_comm"
+Icon = ""
