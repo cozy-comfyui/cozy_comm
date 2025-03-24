@@ -20,7 +20,6 @@ The IMAGE input will take a single or batch of images.
 
 The FILE input allows you to directly send a file to the discord channel.
 
-
 #### EXAMPLE USAGE
 
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/gfq5qqClciw/0.jpg)](http://www.youtube.com/watch?v=gfq5qqClciw "Video Title")
